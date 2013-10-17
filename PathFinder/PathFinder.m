@@ -41,7 +41,7 @@
 
 #pragma mark - Public API
 
-- (NSMutableArray *)pathInExplorableWorld:(id<WorldExplorationProtocol>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB {
+- (NSMutableArray *)pathInExplorableWorld:(id<WorldExplorationProtocol>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB usingDiagonal:(BOOL)useDiagonal {
 	
 	NSMutableArray *path = [[NSMutableArray alloc] init];
 	
@@ -62,7 +62,7 @@
 	 */
 	PathNode *currentNode = nil;
 	while (openedSet.count > 0) {
-		
+		NSLog(@"******************************");
 		/*
 		 * 3. Pick the node from the open list having the smallest F score. Put it on
 		 *    the closed list (you don't want to consider it again).
@@ -79,10 +79,8 @@
 		/*
 		 * 4. For each neighbor (adjacent cell) which isn't in the closed list:
 		 */
-		for (PathNode *neighbor in [self neighborsForNode:currentNode inWorldGrid:[world worldGridArray]]) {
+		for (PathNode *neighbor in [self neighborsForNode:currentNode inExplorableWorld:world]) {
 			if (![self isNode:neighbor inSet:closedSet]) {
-				NSLog(@"Evaluating new neighbor: %f,%f", neighbor.position.x, neighbor.position.y);
-				
 				/*
 				 * 5. Set its parent to current node.
 				 */
@@ -94,13 +92,19 @@
 				 */
 				neighbor.gScore = neighbor.parent.gScore + 1;
 				[openedSet addObject:neighbor];
+                [closedSet addObject:neighbor];
 				
 				/*
 				 * 7. Calculate F score by adding heuristics to the G value.
 				 */
 				neighbor.hScore = [self manhattanDistanceBetweenA:neighbor.position andB:pointB];
+                
+                
+                NSLog(@"Evaluating new neighbor: %f,%f with scores: G %i, H %i, F %i", neighbor.position.x, neighbor.position.y, (int)neighbor.gScore, (int)neighbor.hScore, (int)neighbor.fScore);
 			}
 		}
+        
+        // next open node
 	}
 	
 	// We got ourselves a path!
@@ -138,29 +142,50 @@
 	return candidate;
 }
 
-- (NSSet *) neighborsForNode:(PathNode *)rootNode inWorldGrid:(NSArray *)world {
+- (NSSet *) neighborsForNode:(PathNode *)rootNode inExplorableWorld:(id<WorldExplorationProtocol>)world usingDiagonal:(BOOL)usingDiagonal {
 	NSMutableSet *neighbors = [[NSMutableSet alloc] init];
 	
-	NSLog(@"Looking for neighbors of (%f,%f)", rootNode.position.x, rootNode.position.y);
-	
-	if (rootNode.position.x > 0 && rootNode.position.y > 0)
-		[neighbors addObject:[[PathNode alloc] initWithPosition:CGPointMake(rootNode.position.x - 1, rootNode.position.y - 1)]];
-	if (rootNode.position.y > 0)
-		[neighbors addObject:[[PathNode alloc] initWithPosition:CGPointMake(rootNode.position.x, rootNode.position.y - 1)]];
-	if (rootNode.position.x + 1 < [world[(int)rootNode.position.y] count] && rootNode.position.y > 0)
-		[neighbors addObject:[[PathNode alloc] initWithPosition:CGPointMake(rootNode.position.x + 1, rootNode.position.y - 1)]];
-	
-	if (rootNode.position.x > 0)
-		[neighbors addObject:[[PathNode alloc] initWithPosition:CGPointMake(rootNode.position.x - 1	, rootNode.position.y)]];
-	if (rootNode.position.x + 1 < [world[(int)rootNode.position.y] count])
-		[neighbors addObject:[[PathNode alloc] initWithPosition:CGPointMake(rootNode.position.x + 1	, rootNode.position.y)]];
-	
-	if (rootNode.position.x + 1 < [world[(int)rootNode.position.y] count] && rootNode.position.y + 1 < world.count)
-		[neighbors addObject:[[PathNode alloc] initWithPosition:CGPointMake(rootNode.position.x + 1	, rootNode.position.y + 1)]];
-	if (rootNode.position.y + 1 < world.count)
-		[neighbors addObject:[[PathNode alloc] initWithPosition:CGPointMake(rootNode.position.x		, rootNode.position.y + 1)]];
-	if (rootNode.position.x > 0 && rootNode.position.y + 1 < world.count)
-		[neighbors addObject:[[PathNode alloc] initWithPosition:CGPointMake(rootNode.position.x - 1	, rootNode.position.y + 1)]];
+    if ([world respondsToSelector:@selector(isWalkable:)]) {
+        NSLog(@"Looking for neighbors of (%f,%f)", rootNode.position.x, rootNode.position.y);
+        
+        CGPoint position = CGPointZero;
+        
+        if (usingDiagonal) {
+            position = CGPointMake(rootNode.position.x - 1, rootNode.position.y - 1);
+            if ([world isWalkable:position])
+                [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+        }
+        
+        position = CGPointMake(rootNode.position.x, rootNode.position.y - 1);
+        if ([world isWalkable:position])
+            [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+        
+        if (usingDiagonal) {
+            position = CGPointMake(rootNode.position.x + 1, rootNode.position.y - 1);
+            if ([world isWalkable:position])
+                [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+        }
+        
+        position = CGPointMake(rootNode.position.x - 1, rootNode.position.y);
+        if ([world isWalkable:position])
+            [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+        
+        position = CGPointMake(rootNode.position.x + 1, rootNode.position.y);
+        if ([world isWalkable:position])
+            [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+        
+        position = CGPointMake(rootNode.position.x + 1, rootNode.position.y + 1);
+        if ([world isWalkable:position])
+            [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+        
+        position = CGPointMake(rootNode.position.x, rootNode.position.y + 1);
+        if ([world isWalkable:position])
+            [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+        
+        position = CGPointMake(rootNode.position.x - 1, rootNode.position.y + 1);
+        if ([world isWalkable:position])
+            [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+    }
 	
 	return neighbors;
 }

@@ -43,7 +43,7 @@ int main(int argc, const char * argv[])
 		[world addWall:CGPointMake(3, 4)];
 		[world print];
 		
-		NSMutableArray *path = [[PathFinder sharedInstance] pathInExplorableWorld:world fromA:world.heroPosition toB:world.destinationPosition];
+		NSMutableArray *path = [[PathFinder sharedInstance] pathInExplorableWorld:world fromA:world.heroPosition toB:world.destinationPosition usingDiagonal:NO];
 		NSLog(@"Found a solution in %lu moves!", (unsigned long)path.count);
 	}
     return 0;

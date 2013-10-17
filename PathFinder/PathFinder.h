@@ -10,7 +10,7 @@
 
 @protocol WorldExplorationProtocol <NSObject>
 
-- (NSArray *) worldGridArray;
+- (BOOL) isWalkable:(CGPoint)position;
 - (void) print;
 
 @end
@@ -32,6 +32,6 @@
 
 + (instancetype) sharedInstance;
 
-- (NSMutableArray *)pathInExplorableWorld:(id<WorldExplorationProtocol>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB;
+- (NSMutableArray *)pathInExplorableWorld:(id<WorldExplorationProtocol>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB usingDiagonal:(BOOL)usingDiagonal;
 
 @end

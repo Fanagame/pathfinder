@@ -47,8 +47,20 @@
 
 #pragma mark - Bullshit de protocol 
 
-- (NSArray *) worldGridArray {
-	return self.worldMap;
+- (BOOL) isWalkable:(CGPoint)position {
+    if (position.x < 0 || position.y < 0) // out of bounds
+        return NO;
+    
+    if (position.y > self.worldMap.count) // out of bounds
+        return NO;
+    
+    if (position.x > [self.worldMap[(int)position.y] count]) // out of bounds
+        return NO;
+    
+    if ([self.worldMap[(int)position.y][(int)position.x] boolValue]) // wall
+        return NO;
+    
+    return YES;
 }
 
 - (void) print {
