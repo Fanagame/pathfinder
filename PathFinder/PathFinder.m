@@ -8,6 +8,12 @@
 
 #import "PathFinder.h"
 
+@interface PathNode() {
+	NSInteger _overallScore;
+}
+
+@end
+
 @implementation PathNode
 
 - (id)initWithPosition:(CGPoint)position {
@@ -15,13 +21,18 @@
 	
 	if (self) {
 		self.position = position;
+		_overallScore = -1;
 	}
 	
 	return self;
 }
 
-- (NSInteger)fScore {
-	return self.gScore + self.hScore;
+- (NSInteger)overallScore {
+	if (_overallScore < 0) {
+		_overallScore = self.gScore + self.hScore;
+	}
+
+	return _overallScore;
 }
 
 @end
@@ -39,21 +50,21 @@
 	return instance;
 }
 
-#pragma mark - Public API
+#pragma mark - Public API -
 
-- (NSMutableArray *)pathInExplorableWorld:(id<WorldExplorationProtocol>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB usingDiagonal:(BOOL)useDiagonal {
+- (NSArray *)pathInExplorableWorld:(id<ExplorableWorldDelegate>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB usingDiagonal:(BOOL)useDiagonal {
 	
-	NSMutableArray *path = [[NSMutableArray alloc] init];
+	NSArray *path = nil;
 	
-	NSMutableSet *openedSet = [[NSMutableSet alloc] init];
-	NSMutableSet *closedSet = [[NSMutableSet alloc] init];
+	NSMutableSet *openedSet = [[NSMutableSet alloc] init]; // unexplored nodes that we know of
+	NSMutableSet *closedSet = [[NSMutableSet alloc] init]; // nodes that were already explored and evaluated
 	
 	/*
 	 * 1. Find node closest to your position and declare it start node and put it on
 	 *	  the open list.
 	 */
 	PathNode *startNode = [[PathNode alloc] initWithPosition:pointA];
-	startNode.hScore = [self manhattanDistanceBetweenA:startNode.position andB:pointB];
+	startNode.hScore = [self heuristicForPosition:pointA goingToB:pointB inWorld:world];
 	[openedSet addObject:startNode];
 	
 	
@@ -62,7 +73,6 @@
 	 */
 	PathNode *currentNode = nil;
 	while (openedSet.count > 0) {
-		NSLog(@"******************************");
 		/*
 		 * 3. Pick the node from the open list having the smallest F score. Put it on
 		 *    the closed list (you don't want to consider it again).
@@ -70,6 +80,7 @@
 		currentNode = [self nodeWithSmallestFScoreInSet:openedSet];
 		
 		if (CGPointEqualToPoint(currentNode.position, pointB)) {
+			path = [self reversePathFromNode:currentNode];
 			break; // return the path
 		}
 		
@@ -77,12 +88,12 @@
 		[closedSet addObject:currentNode];
 		
 		/*
-		 * 4. For each neighbor (adjacent cell) which isn't in the closed list:
+		 * 4. For each neighbor (adjacent cell) which isn't in the closed list or the opened list:
 		 */
-		for (PathNode *neighbor in [self neighborsForNode:currentNode inExplorableWorld:world]) {
-			if (![self isNode:neighbor inSet:closedSet]) {
+		for (PathNode *neighbor in [self neighborsForNode:currentNode inExplorableWorld:world usingDiagonal:useDiagonal]) {
+			if (![self isNode:neighbor inSet:closedSet] && ![self isNode:neighbor inSet:openedSet]) {
 				/*
-				 * 5. Set its parent to current node.
+				 * 5. Set its parent to current node. Will helps us find the way back
 				 */
 				neighbor.parent = currentNode;
 				
@@ -91,16 +102,9 @@
 				 * add it to the open list
 				 */
 				neighbor.gScore = neighbor.parent.gScore + 1;
+				neighbor.hScore = [self heuristicForPosition:neighbor.position goingToB:pointB inWorld:world];
+                
 				[openedSet addObject:neighbor];
-                [closedSet addObject:neighbor];
-				
-				/*
-				 * 7. Calculate F score by adding heuristics to the G value.
-				 */
-				neighbor.hScore = [self manhattanDistanceBetweenA:neighbor.position andB:pointB];
-                
-                
-                NSLog(@"Evaluating new neighbor: %f,%f with scores: G %i, H %i, F %i", neighbor.position.x, neighbor.position.y, (int)neighbor.gScore, (int)neighbor.hScore, (int)neighbor.fScore);
 			}
 		}
         
@@ -111,7 +115,9 @@
 	return path;
 }
 
-#pragma mark - Private API
+#pragma mark - Private API -
+
+#pragma mark Path and node management
 
 - (BOOL) isNode:(PathNode *)node inSet:(NSSet *)set {
 	BOOL found = NO;
@@ -126,28 +132,24 @@
 	return found;
 }
 
-- (NSInteger) manhattanDistanceBetweenA:(CGPoint)pointA andB:(CGPoint)pointB {
-	return abs(pointB.x - pointA.x) + abs(pointB.y - pointB.y);
-}
-
-- (PathNode *) nodeWithSmallestFScoreInSet:(NSSet *)set {
-	PathNode *candidate = nil;
+- (NSArray *) reversePathFromNode:(PathNode *)node {
+	NSMutableArray *array = [[NSMutableArray alloc] init];
 	
-	for (PathNode *node in set) {
-		if (!candidate || node.fScore < candidate.fScore) {
-			candidate = node;
-		}
+	PathNode *curNode = node;
+	
+	while (curNode.parent) {
+		[array insertObject:curNode atIndex:0];
+		curNode = curNode.parent;
 	}
 	
-	return candidate;
+	return array;
 }
 
-- (NSSet *) neighborsForNode:(PathNode *)rootNode inExplorableWorld:(id<WorldExplorationProtocol>)world usingDiagonal:(BOOL)usingDiagonal {
+- (NSSet *) neighborsForNode:(PathNode *)rootNode inExplorableWorld:(id<ExplorableWorldDelegate>)world usingDiagonal:(BOOL)usingDiagonal {
 	NSMutableSet *neighbors = [[NSMutableSet alloc] init];
 	
     if ([world respondsToSelector:@selector(isWalkable:)]) {
-        NSLog(@"Looking for neighbors of (%f,%f)", rootNode.position.x, rootNode.position.y);
-        
+
         CGPoint position = CGPointZero;
         
         if (usingDiagonal) {
@@ -174,20 +176,52 @@
         if ([world isWalkable:position])
             [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
         
-        position = CGPointMake(rootNode.position.x + 1, rootNode.position.y + 1);
-        if ([world isWalkable:position])
-            [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
-        
+		if (usingDiagonal) {
+			position = CGPointMake(rootNode.position.x + 1, rootNode.position.y + 1);
+			if ([world isWalkable:position])
+				[neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+        }
+		
         position = CGPointMake(rootNode.position.x, rootNode.position.y + 1);
         if ([world isWalkable:position])
             [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
         
-        position = CGPointMake(rootNode.position.x - 1, rootNode.position.y + 1);
-        if ([world isWalkable:position])
-            [neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+		if (usingDiagonal) {
+			position = CGPointMake(rootNode.position.x - 1, rootNode.position.y + 1);
+			if ([world isWalkable:position])
+				[neighbors addObject:[[PathNode alloc] initWithPosition:position]];
+		}
     }
 	
 	return neighbors;
+}
+
+#pragma mark Score evaluation
+
+- (PathNode *) nodeWithSmallestFScoreInSet:(NSSet *)set {
+	PathNode *candidate = nil;
+	
+	for (PathNode *node in set) {
+		if (!candidate || node.overallScore < candidate.overallScore) {
+			candidate = node;
+		}
+	}
+	
+	return candidate;
+}
+
+- (NSInteger) heuristicForPosition:(CGPoint)pointA goingToB:(CGPoint)pointB inWorld:(id<ExplorableWorldDelegate>)world {
+	NSInteger score = [self manhattanDistanceBetweenA:pointA andB:pointB];
+	
+	if ([world respondsToSelector:@selector(weightForTileAtPosition:)]) {
+		score += [world weightForTileAtPosition:pointA];
+	}
+	
+	return score;
+}
+
+- (NSInteger) manhattanDistanceBetweenA:(CGPoint)pointA andB:(CGPoint)pointB {
+	return abs(pointB.x - pointA.x) + abs(pointB.y - pointB.y);
 }
 
 @end

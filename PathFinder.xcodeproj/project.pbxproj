@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		7284B592180FB41500CAD161 /* PathFinder.m in Sources */ = {isa = PBXBuildFile; fileRef = 7284B591180FB41500CAD161 /* PathFinder.m */; };
+		72D99A641810EF5200AB5B9D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72D99A631810EF5200AB5B9D /* CoreGraphics.framework */; };
 		72ECC316180683BD00A96A74 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72ECC315180683BD00A96A74 /* Foundation.framework */; };
 		72ECC319180683BD00A96A74 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 72ECC318180683BD00A96A74 /* main.m */; };
 		72ECC31D180683BD00A96A74 /* PathFinder.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 72ECC31C180683BD00A96A74 /* PathFinder.1 */; };
@@ -30,6 +31,7 @@
 /* Begin PBXFileReference section */
 		7284B590180FB41500CAD161 /* PathFinder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PathFinder.h; sourceTree = "<group>"; };
 		7284B591180FB41500CAD161 /* PathFinder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PathFinder.m; sourceTree = "<group>"; };
+		72D99A631810EF5200AB5B9D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		72ECC312180683BD00A96A74 /* PathFinder */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PathFinder; sourceTree = BUILT_PRODUCTS_DIR; };
 		72ECC315180683BD00A96A74 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		72ECC318180683BD00A96A74 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -44,6 +46,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				72D99A641810EF5200AB5B9D /* CoreGraphics.framework in Frameworks */,
 				72ECC316180683BD00A96A74 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -51,6 +54,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		72D99A651810FC5A00AB5B9D /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				7284B590180FB41500CAD161 /* PathFinder.h */,
+				7284B591180FB41500CAD161 /* PathFinder.m */,
+			);
+			name = Library;
+			sourceTree = "<group>";
+		};
+		72D99A661810FC6C00AB5B9D /* Example */ = {
+			isa = PBXGroup;
+			children = (
+				72ECC3231806841500A96A74 /* World.h */,
+				72ECC3241806841500A96A74 /* World.m */,
+			);
+			name = Example;
+			sourceTree = "<group>";
+		};
 		72ECC309180683BD00A96A74 = {
 			isa = PBXGroup;
 			children = (
@@ -71,6 +92,7 @@
 		72ECC314180683BD00A96A74 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				72D99A631810EF5200AB5B9D /* CoreGraphics.framework */,
 				72ECC315180683BD00A96A74 /* Foundation.framework */,
 			);
 			name = Frameworks;
@@ -79,13 +101,11 @@
 		72ECC317180683BD00A96A74 /* PathFinder */ = {
 			isa = PBXGroup;
 			children = (
+				72D99A661810FC6C00AB5B9D /* Example */,
+				72D99A651810FC5A00AB5B9D /* Library */,
 				72ECC318180683BD00A96A74 /* main.m */,
-				72ECC3231806841500A96A74 /* World.h */,
-				72ECC3241806841500A96A74 /* World.m */,
 				72ECC31C180683BD00A96A74 /* PathFinder.1 */,
 				72ECC31A180683BD00A96A74 /* Supporting Files */,
-				7284B590180FB41500CAD161 /* PathFinder.h */,
-				7284B591180FB41500CAD161 /* PathFinder.m */,
 			);
 			path = PathFinder;
 			sourceTree = "<group>";

@@ -29,41 +29,61 @@
 	for (int i = 0; i < 10; i++) {
 		NSMutableArray *columns = [[NSMutableArray alloc] init];
 		
-		for (int j = 0; j < 10; j++) {
-			[columns addObject:[NSNumber numberWithBool:NO]];
-		}
+		for (int j = 0; j < 10; j++)
+			[columns addObject:[NSNumber numberWithUnsignedInteger:WorldTerrainType_Default]];
 		
 		[self.worldMap addObject:columns];
 	}
 }
 
 - (void) addWall:(CGPoint)wallPosition {
-	if (self.worldMap.count > wallPosition.y) {
-		if ([[self.worldMap objectAtIndex:wallPosition.y] count] > wallPosition.y) {
-			[[self.worldMap objectAtIndex:wallPosition.y] setObject:[NSNumber numberWithBool:YES] atIndex:wallPosition.x];
+	[self setTerrainType:WorldTerrainType_Wall atPosition:wallPosition];
+}
+
+- (void) setTerrainType:(WorldTerrainType)type atPosition:(CGPoint)position {
+	if (position.y >= 0 && self.worldMap.count - 1 > position.y) {
+		if (position.x >= 0 && [self.worldMap[(int)position.y] count] - 1 > position.y) {
+			self.worldMap[(int)position.y][(int)position.x] = [NSNumber numberWithUnsignedInteger:type];
 		}
 	}
 }
 
-#pragma mark - Bullshit de protocol 
+#pragma mark - PathFinder protocol 
 
 - (BOOL) isWalkable:(CGPoint)position {
     if (position.x < 0 || position.y < 0) // out of bounds
         return NO;
     
-    if (position.y > self.worldMap.count) // out of bounds
+    if (position.y > self.worldMap.count - 1) // out of bounds
         return NO;
     
-    if (position.x > [self.worldMap[(int)position.y] count]) // out of bounds
+    if (position.x > [self.worldMap[(int)position.y] count] - 1) // out of bounds
         return NO;
     
-    if ([self.worldMap[(int)position.y][(int)position.x] boolValue]) // wall
+    if ([self.worldMap[(int)position.y][(int)position.x] unsignedIntegerValue] == WorldTerrainType_Wall) // wall
         return NO;
     
     return YES;
 }
 
+- (NSUInteger) weightForTileAtPosition:(CGPoint)position {
+	if (position.y >= 0 && self.worldMap.count - 1 > position.y) {
+		if (position.x >= 0 && [self.worldMap[(int)position.y] count] - 1 > position.x) {
+			return [self.worldMap[(int)position.y][(int)position.x] unsignedIntegerValue];
+		}
+	}
+	
+	return WorldTerrainType_Default;
+}
+
+
+#pragma mark - Debug functions
+
 - (void) print {
+	[self printWithPath:nil];
+}
+
+- (void) printWithPath:(NSArray *)path {
 	for (int i = 0; i < self.worldMap.count; i++) {
 		NSMutableArray *columns = self.worldMap[i];
 		
@@ -76,12 +96,28 @@
 			if (j > 0)
 				[buffer appendString:@","];
 			
-			if (i == self.heroPosition.y && j == self.heroPosition.x)
+			if ([self isPosition:CGPointMake(j, i) partOfThePath:path])
+				[buffer appendString:@"-"];
+			else if (i == self.heroPosition.y && j == self.heroPosition.x)
 				[buffer appendString:@"X"];
 			else if (i == self.destinationPosition.y && j == self.destinationPosition.x)
 				[buffer appendString:@"D"];
-			else
-				[buffer appendString:([col boolValue] ? @"1" : @"0")];
+			else {
+				switch (col.unsignedIntegerValue) {
+					case WorldTerrainType_Wall:
+						[buffer appendString:@"1"];
+						break;
+					case WorldTerrainType_Mud:
+						[buffer appendString:@"2"];
+						break;
+					case WorldTerrainType_Water:
+						[buffer appendString:@"3"];
+						break;
+					default:
+						[buffer appendString:@"0"];
+						break;
+				}
+			}
 		}
 		
 		[buffer appendString:@"]"];
@@ -90,71 +126,17 @@
 	}
 }
 
-#pragma mark - Path finding
-
-//- (NSUInteger) heuristicCostEstimateBetweenPointA:(CGPoint)pointA andPointB:(CGPoint)pointB {
-//	return abs(pointA.x - pointB.x) + abs(pointA.y - pointB.y);
-//}
-//
-//- (NSMutableArray *)reconstructPath:(NSMutableArray *)path to:(CGPoint)destination {
-//	return path;
-//}
-//
-//- (void) removeNode:(CGPoint)point fromSet:(NSMutableSet **)set {
-//	for (NSValue *val in *set) {
-//		if (CGPointEqualToPoint(val.pointValue, point)) {
-//			[*set removeObject:val];
-//			break;
-//		}
-//	}
-//}
-//
-//- (NSSet *) neighborsForPoint:(CGPoint)point {
-//	NSMutableSet *set = [[NSMutableSet alloc] init];
-//	
-//	if (point.x > 0) {
-//		if (point.y > 0)
-//			[set addObject:[NSValue valueWithPoint:CGPointMake(point.x - 1, point.y - 1)]];
-//		[set addObject:[NSValue valueWithPoint:CGPointMake(point.x - 1, point.y)]];
-//	}
-//	
-//	//TODO: finish writing this
-//	
-//	return set;
-//}
-//
-//- (CGPoint) nodeWithLowestScoreInSet:(NSSet *)set {
-//	return CGPointMake(0, 0);
-//}
-//
-- (NSMutableArray *)pathToDestination {
-	NSMutableArray *path = [[NSMutableArray alloc] init];
-//
-//	NSMutableSet *closedSet = [[NSMutableSet alloc] init];
-//	NSMutableSet *openedSet = [[NSMutableSet alloc] init];
-//	[openedSet addObject:[NSValue valueWithPoint:self.heroPosition]];
-//	
-////	gScore[start] = 0;
-////	fScore[start] = gScore[start] + [self heuristicCostEstimateBetweenPointA:self.heroPosition andPointB:self.destinationPosition];
-//	
-////	NSLog(@"%d", [self heuristicCostEstimateBetweenPointA:self.heroPosition andPointB:self.destinationPosition]);
-//	
-//	CGPoint currentNode = CGPointZero;
-//	while (openedSet.count > 0) {
-////		currentNode = [self nodeWithLowestScoreInSet:openedSet];
-//		
-//		if (CGPointEqualToPoint(currentNode, self.destinationPosition))
-//			return [self reconstructPath:path to:self.destinationPosition];
-//		
-//		[self removeNode:currentNode fromSet:&openedSet];
-//		[closedSet addObject:[NSValue valueWithPoint:currentNode]];
-//		
-//		for (NSValue *neighbor in [self neighborsForPoint:currentNode]) {
-//			
-//		}
-//	}
-//	
-	return path;
+- (BOOL) isPosition:(CGPoint)position partOfThePath:(NSArray *)path {
+	BOOL value = NO;
+	
+	for (PathNode *n in path) {
+		if (CGPointEqualToPoint(position, n.position)) {
+			value = YES;
+			break;
+		}
+	}
+	
+	return value;
 }
 
 @end

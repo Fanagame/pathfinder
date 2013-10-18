@@ -9,7 +9,14 @@
 #import <Foundation/Foundation.h>
 #import "PathFinder.h"
 
-@interface World : NSObject<WorldExplorationProtocol>
+typedef enum WorldTerrainType : NSUInteger {
+	WorldTerrainType_Default = 0,
+	WorldTerrainType_Mud = 5,
+	WorldTerrainType_Water = 20,
+	WorldTerrainType_Wall = 999
+} WorldTerrainType;
+
+@interface World : NSObject<ExplorableWorldDelegate>
 
 @property (nonatomic, strong) NSMutableArray *worldMap;
 
@@ -17,6 +24,9 @@
 @property (nonatomic, assign) CGPoint destinationPosition;
 
 - (void) addWall:(CGPoint)wallPosition;
-- (NSMutableArray *)pathToDestination;
+- (void) setTerrainType:(WorldTerrainType)type atPosition:(CGPoint)position;
+
+- (void) print;
+- (void) printWithPath:(NSArray *)path;
 
 @end
