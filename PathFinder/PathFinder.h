@@ -8,14 +8,24 @@
 
 #import <Foundation/Foundation.h>
 
-@protocol ExplorableWorldDelegate <NSObject>
+@protocol ExploringObjectDelegate <NSObject>
 
-- (BOOL) isWalkable:(CGPoint)position;
-- (NSUInteger) weightForTileAtPosition:(CGPoint)position;
+- (NSString *) exploringObjectType;
 
 @end
 
-@interface PathNode : NSObject
+@protocol ExplorableWorldDelegate <NSObject>
+
+@optional;
+- (BOOL) isWalkable:(CGPoint)position;
+- (BOOL) isWalkable:(CGPoint)position forExploringObject:(id<ExploringObjectDelegate>)exploringObject;
+
+- (NSUInteger) weightForTileAtPosition:(CGPoint)position;
+- (NSUInteger) weightForTileAtPosition:(CGPoint)position forExploringObject:(id<ExploringObjectDelegate>)exploringObject;
+
+@end
+
+@interface PathNode : NSObject<NSCopying>
 
 @property (nonatomic, assign) CGPoint position;
 @property (nonatomic, strong) PathNode *parent;
@@ -32,6 +42,9 @@
 
 + (instancetype) sharedInstance;
 
-- (NSArray *)pathInExplorableWorld:(id<ExplorableWorldDelegate>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB usingDiagonal:(BOOL)usingDiagonal;
+- (void)pathInExplorableWorld:(id<ExplorableWorldDelegate>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB usingDiagonal:(BOOL)useDiagonal onSuccess:(void (^)(NSArray *path))onSuccess;
+- (void)pathInExplorableWorld:(id<ExplorableWorldDelegate>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB usingDiagonal:(BOOL)useDiagonal andExploringObject:(id<ExploringObjectDelegate>)exploringObject onSuccess:(void (^)(NSArray *path))onSuccess;
+
+- (NSArray *)pathInExplorableWorld:(id<ExplorableWorldDelegate>)world fromA:(CGPoint)pointA toB:(CGPoint)pointB usingDiagonal:(BOOL)usingDiagonal andExploringObject:(id<ExploringObjectDelegate>)exploringObject;
 
 @end
